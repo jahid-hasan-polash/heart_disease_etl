@@ -1,0 +1,50 @@
+# Python compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables
+.env
+.env.local
+
+# Docker volumes
+postgres_data/
+
+# Temporary files
+tmp/
+temp/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Test coverage reports
+.coverage
+htmlcov/
