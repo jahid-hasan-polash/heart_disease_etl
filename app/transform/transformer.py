@@ -35,9 +35,10 @@ class HeartDiseaseTransformer:
         1. Standardize column names
         2. Convert data types
         3. Handle missing values
-        4. Validate data
-        5. Remove duplicates
-        6. Add metadata columns
+        4. Standardize date formats
+        5. Validate data
+        6. Remove duplicates
+        7. Add metadata columns
         
         Returns:
             pd.DataFrame: Transformed data.
@@ -52,6 +53,7 @@ class HeartDiseaseTransformer:
             df = self._standardize_column_names(df)
             df = self._convert_data_types(df)
             df = self._handle_missing_values(df)
+            df = self._standardize_date_formats(df)
             df = self._validate_data(df)
             df = self._remove_duplicates(df)
             df = self._add_metadata(df)
@@ -178,6 +180,47 @@ class HeartDiseaseTransformer:
         
         return df
     
+    def _standardize_date_formats(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Standardize date formats to YYYY-MM-DD.
+        
+        Args:
+            df (pd.DataFrame): DataFrame to process.
+            
+        Returns:
+            pd.DataFrame: DataFrame with standardized date formats.
+        """
+        logger.info("Standardizing date formats")
+        
+        # List of potential date columns in the dataset
+        date_columns = []
+        
+        # Check if any of the columns might contain dates (based on column name)
+        potential_date_cols = [col for col in df.columns if any(date_term in col.lower() 
+                                                              for date_term in ['date', 'day', 'time', 'dt'])]
+        
+        for col in potential_date_cols:
+            # Try to convert to datetime
+            try:
+                # Check if the column contains string data that could be dates
+                if df[col].dtype == 'object':
+                    df[col] = pd.to_datetime(df[col], errors='coerce')
+                    non_null_count = df[col].notnull().sum()
+                    
+                    # If most values were successfully converted, assume it's a date column
+                    if non_null_count > 0.5 * len(df):
+                        # Convert to standard YYYY-MM-DD format
+                        df[col] = df[col].dt.strftime('%Y-%m-%d')
+                        date_columns.append(col)
+                        logger.info(f"Standardized date format in column '{col}' to YYYY-MM-DD")
+            except Exception as e:
+                logger.warning(f"Failed to convert column '{col}' to date format: {str(e)}")
+        
+        if not date_columns:
+            logger.info("No date columns identified in the dataset")
+        
+        return df
+    
     def _validate_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Validate data and handle invalid values.
@@ -189,6 +232,9 @@ class HeartDiseaseTransformer:
             pd.DataFrame: Validated DataFrame.
         """
         logger.info("Validating data")
+        
+        # Track number of validation issues found
+        validation_issues = 0
         
         # Define valid ranges for numeric columns
         valid_ranges = {
@@ -208,6 +254,7 @@ class HeartDiseaseTransformer:
                 # Identify out-of-range values
                 out_of_range = ((df[col] < min_val) | (df[col] > max_val)) & df[col].notnull()
                 out_of_range_count = out_of_range.sum()
+                validation_issues += out_of_range_count
                 
                 if out_of_range_count > 0:
                     logger.warning(f"Found {out_of_range_count} out-of-range values in '{col}'")
@@ -233,6 +280,7 @@ class HeartDiseaseTransformer:
                 # Identify invalid values
                 invalid = ~df[col].isin(valid_values) & df[col].notnull()
                 invalid_count = invalid.sum()
+                validation_issues += invalid_count
                 
                 if invalid_count > 0:
                     logger.warning(f"Found {invalid_count} invalid values in '{col}'")
@@ -246,6 +294,7 @@ class HeartDiseaseTransformer:
                     df[col].fillna(mode_value, inplace=True)
                     logger.info(f"Imputed NaN values in '{col}' with mode: {mode_value}")
         
+        logger.info(f"Data validation complete: found and fixed {validation_issues} issues")
         return df
     
     def _remove_duplicates(self, df: pd.DataFrame) -> pd.DataFrame:

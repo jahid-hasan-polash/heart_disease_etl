@@ -1,48 +1,6 @@
 # Heart Disease ETL Pipeline
 
-This project implements an ETL (Extract, Transform, Load) pipeline for the UCI Heart Disease dataset. The pipeline extracts data from the UCI Machine Learning Repository, transforms it by cleaning and validating it, and loads it into a PostgreSQL database.
-
-## Project Structure
-
-The project is organized with a modular structure:
-
-```
-heart_disease_etl/
-│
-├── README.md                     # Project documentation
-├── requirements.txt              # Python dependencies
-├── Dockerfile                    # Docker configuration
-├── docker-compose.yml            # Docker Compose configuration
-├── main.py                       # Main entry point
-│
-├── app/                          # Application code
-│   ├── __init__.py               # Make app a package
-│   ├── config.py                 # Configuration settings
-│   │
-│   ├── extract/                  # Data extraction module
-│   │   ├── __init__.py
-│   │   └── extractor.py          # Data extraction logic
-│   │
-│   ├── transform/                # Data transformation module
-│   │   ├── __init__.py
-│   │   └── transformer.py        # Data transformation logic
-│   │
-│   ├── load/                     # Data loading module
-│   │   ├── __init__.py
-│   │   └── loader.py             # Data loading logic
-│   │
-│   ├── database/                 # Database operations
-│   │   ├── __init__.py
-│   │   ├── connection.py         # Database connection management
-│   │   └── models.py             # SQLAlchemy ORM models
-│   │
-│   └── utils/                    # Utility functions
-│       ├── __init__.py
-│       └── logging_config.py     # Logging configuration
-│
-└── logs/                         # Log files directory
-    └── .gitkeep                  # Keep the directory in git
-```
+This project implements an ETL (Extract, Transform, Load) pipeline for the UCI Heart Disease dataset. The pipeline extracts data from the UCI Machine Learning Repository, transforms it by cleaning and validating it, and loads it into a PostgreSQL database. The system ensures high data quality through comprehensive validation, error handling, and detailed logging of the entire ETL process.
 
 ## Design Choices
 
@@ -50,27 +8,89 @@ This ETL pipeline was designed with the following principles in mind:
 
 1. **Modularity**: The code is organized into separate modules for extraction, transformation, and loading, making it easy to maintain and extend.
 
-2. **Robustness**: The pipeline includes comprehensive error handling, validation, and logging to ensure reliability.
+2. **Robustness**: The pipeline includes comprehensive error handling, validation, and logging to ensure reliability and data quality.
 
-3. **Data Quality**: The transformation phase includes steps to handle missing values, standardize formats, remove duplicates, and validate data types.
+3. **Data Quality Assurance**: Thorough validation and cleaning processes ensure the output data meets quality standards with detailed logs of any inconsistencies.
 
-4. **Scalability**: The loading phase uses chunking to handle large datasets efficiently.
+4. **Scalability**: The loading phase uses chunking to handle large datasets efficiently, allowing the pipeline to scale with dataset size.
 
-5. **Observability**: Detailed logging provides visibility into the ETL process and helps diagnose issues.
+5. **Observability**: Human-readable logging provides visibility into each step of the ETL process, recording transformations applied and any data issues encountered.
+
+6. **Reproducibility**: Docker containerization ensures consistent behavior across different environments.
+
+## ETL Process Details
+
+### Extract
+- **Data Source**: Heart Disease dataset from the UCI Machine Learning Repository (ID: 45)
+- **Method**: Extracts data using the `ucimlrepo` Python package
+- **Error Handling**: Gracefully handles connection issues and corrupted data sources
+- **Logging**: Records dataset metadata and extraction status
+
+### Transform
+- **Data Cleaning**:
+  - Standardizes column names to snake_case format
+  - Converts date fields to consistent YYYY-MM-DD format
+  - Handles missing values through appropriate imputation strategies
+  - Validates data types and ensures numeric fields contain only numbers
+  - Performs data range validation for critical fields
+  - Removes duplicate records based on configurable unique identifiers
+  - Normalizes categorical variables for consistency
+
+- **Data Enrichment**:
+  - Calculates derived features where applicable
+  - Adds metadata columns for tracking data lineage and processing timestamps
+  - Provides statistical summaries of the transformation process
+
+### Handling Missing and Inconsistent Data
+
+Our approach to handling missing and inconsistent data follows these strategies:
+
+1. **Missing Values**:
+   - For columns with low missing rate (<5%):
+     - Numeric columns: Impute with median values
+     - Categorical columns: Impute with mode (most frequent value)
+   - For columns with high missing rate (>5%):
+     - Drop rows where critical data is missing to maintain data integrity
+
+2. **Inconsistent Data**:
+   - **Value Range Validation**: Numeric fields are checked against valid ranges (e.g., age: 0-120)
+   - **Categorical Data**: Values are validated against pre-defined allowed values
+   - **Data Type Enforcement**: Values are coerced to proper data types with explicit error handling
+   - **Date Standardization**: Various date formats are converted to YYYY-MM-DD format
+
+3. **Invalid Data Handling**:
+   - Values outside valid ranges are replaced with NaN, then imputed
+   - Detailed logs record all replacements for transparency
+   - Statistics on data quality issues are generated during transformation
+
+4. **Duplicate Records**:
+   - Full duplicate records are identified and removed
+   - The number of removed duplicates is logged for audit purposes
+
+### Load
+- **Database**: PostgreSQL with properly defined schema
+- **Approach**: 
+  - Creates tables with appropriate data types and constraints
+  - Uses batch processing for efficient loading of large datasets
+  - Implements transaction handling for data integrity
+  - Performs post-load validation to ensure data was loaded correctly
+
+## Technical Requirements
+
+- **Language**: Implemented in Python 3.8+
+- **Containerization**: Complete Dockerized setup with Docker Compose
+- **Database**: PostgreSQL database for data storage
+- **Dependencies**: All required packages listed in requirements.txt
+- **End-to-End Automation**: Pipeline runs without user intervention after initial setup
 
 ## Features
 
-- **Data Extraction**: Extracts the Heart Disease dataset from the UCI Machine Learning Repository using the `ucimlrepo` package.
-- **Data Transformation**:
-  - Standardizes column names
-  - Converts data types
-  - Handles missing values
-  - Validates data
-  - Removes duplicates
-  - Adds metadata for data lineage
-- **Data Loading**: Loads the transformed data into a PostgreSQL database with proper data types and constraints.
-- **Dockerized Setup**: Includes Docker and Docker Compose configurations for easy deployment.
-- **Logging**: Comprehensive logging for monitoring and debugging.
+- **Automated ETL Pipeline**: End-to-end process that requires minimal setup and no user input during execution
+- **Human-Readable Logging**: Comprehensive logs that clearly document each step, transformation, and any data issues encountered
+- **Data Quality Reports**: Generates summaries of data quality metrics before and after transformation
+- **Error Handling**: Robust error handling with appropriate fallback mechanisms
+- **Configuration Management**: Externalized configuration for easy customization
+- **Performance Optimization**: Efficient processing through vectorized operations and batch loading
 
 ## Setup and Usage
 
@@ -82,7 +102,7 @@ This ETL pipeline was designed with the following principles in mind:
 
 1. Clone the repository:
    ```bash
-   git clone [your-repository-url]
+   git clone https://github.com/jahid-hasan-polash/heart_disease_etl
    cd heart_disease_etl
    ```
 
@@ -116,31 +136,3 @@ You can customize the pipeline by setting the following environment variables:
 - `DB_PASSWORD`: PostgreSQL password (default: `postgres`)
 - `LOG_LEVEL`: Logging level (default: `INFO`)
 - `DATASET_ID`: UCI ML Repository dataset ID (default: `45` for Heart Disease)
-
-## Development
-
-### Running Locally
-
-To run the pipeline locally without Docker:
-
-1. Install the dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-2. Make sure you have PostgreSQL running and accessible.
-
-3. Run the pipeline:
-   ```bash
-   python main.py
-   ```
-
-### Adding New Features
-
-- To add support for a new dataset, create a new extractor class in the `extract` module.
-- To add new transformations, extend the `transformer.py` file.
-- To support a different database, create a new loader class in the `load` module.
-
-## License
-
-[MIT License](LICENSE)
