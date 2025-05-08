@@ -124,10 +124,12 @@ class HeartDiseaseTransformer:
                 df[col] = pd.to_numeric(df[col], errors='coerce')
                 logger.info(f"Converted '{col}' to float")
         
-        # Convert target to binary (0 = no disease, 1 = disease)
+        # Convert target to integer (0-4) and create binary has_disease column
         if 'target' in df.columns:
-            df['target'] = df['target'].apply(lambda x: 0 if x == 0 else 1)
-            logger.info("Converted 'target' to binary (0 = no disease, 1 = disease)")
+            df['target'] = pd.to_numeric(df['target'], errors='coerce').astype('Int64')
+            # Add binary column indicating presence (1) or absence (0) of heart disease
+            df['has_disease'] = (df['target'] > 0).astype(int)
+            logger.info("Converted 'target' to integer (0-4) and added 'has_disease' binary column")
         
         return df
     
@@ -245,7 +247,8 @@ class HeartDiseaseTransformer:
             'oldpeak': (0, 10),    # ST depression
             'ca': (0, 3),          # Number of major vessels
             'slope': (1, 3),       # Slope of ST segment
-            'thal': (3, 7)         # Thalassemia types
+            'thal': (3, 7),        # Thalassemia types
+            'target': (0, 4)       # Heart disease severity (0-4)
         }
         
         # Check and fix out-of-range values
@@ -272,7 +275,8 @@ class HeartDiseaseTransformer:
         categorical_validations = {
             'cp': [1, 2, 3, 4],       # Chest pain type
             'restecg': [0, 1, 2],     # Resting ECG
-            'target': [0, 1]          # Target (0 = no disease, 1 = disease)
+            'target': [0, 1, 2, 3, 4], # Target (0 = no disease, 1-4 = disease)
+            'has_disease': [0, 1]     # Binary target (0 = no disease, 1 = disease)
         }
         
         for col, valid_values in categorical_validations.items():
