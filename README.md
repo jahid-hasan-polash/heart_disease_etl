@@ -108,7 +108,7 @@ Our approach to handling missing and inconsistent data follows these strategies:
 
 2. Start the services using Docker Compose:
    ```bash
-   docker-compose up --build
+   docker compose up -d --build
    ```
 
 This will:
